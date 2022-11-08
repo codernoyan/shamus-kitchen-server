@@ -24,6 +24,36 @@ const dbConnect = async () => {
 }
 dbConnect();
 
+// kitchen service database
+const servicesCollection = client.db('cloudKitchen').collection('services');
+
+// add services
+app.post('/services', async (req, res) => {
+  try {
+    const service = req.body;
+    const result = await servicesCollection.insertOne(service);
+    console.log(result);
+    if (result.insertedId) {
+      res.send({
+        success: true,
+        message: `Successfully created ${service.name} service`,
+        data: result
+      })
+    } else {
+      res.send({
+        success: false,
+        error: "Couldn't create your requested service"
+      })
+    }
+
+  } catch (error) {
+    res.send({
+      success: false,
+      error: error.message
+    })
+  }
+})
+
 app.get('/', (req, res) => {
   res.send('Cloud Kitchen server is running');
 });

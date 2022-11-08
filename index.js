@@ -52,6 +52,26 @@ app.post('/services', async (req, res) => {
       error: error.message
     })
   }
+});
+
+// get services
+app.get('/services', async (req, res) => {
+  try {
+    const query = {};
+    const cursor = servicesCollection.find(query);
+    const services = await cursor.toArray();
+
+    res.send({
+      success: true,
+      message: 'Successfully got the services data',
+      data: services
+    })
+  } catch (error) {
+    res.send({
+      success: false,
+      error: error.message
+    })
+  }
 })
 
 app.get('/', (req, res) => {

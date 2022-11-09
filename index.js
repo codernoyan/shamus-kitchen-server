@@ -101,6 +101,37 @@ app.get('/services/:id', async (req, res) => {
       error: error.message
     });
   }
+});
+
+// review post api
+app.put('/services/:id', async (req, res) => {
+  try {
+    const id = req.params.id;
+    const filter = { _id: ObjectId(id) };
+    const info = req.body;
+    const updatedDoc = {
+      $push: { customerReview: info }
+    };
+    const result = await servicesCollection.updateOne(filter, updatedDoc, { upsert: true });
+
+    if (result.matchedCount) {
+      res.send({
+        success: true,
+        message: `successfully updated review`,
+        data: result
+      });
+    } else {
+      res.send({
+        success: false,
+        error: "Couldn't update  the product",
+      });
+    }
+  } catch (error) {
+    res.send({
+      success: false,
+      error: error.message
+    });
+  }
 })
 
 app.get('/', (req, res) => {

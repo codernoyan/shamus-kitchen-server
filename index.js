@@ -1,7 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const { MongoClient, ServerApiVersion } = require('mongodb');
-const colors = require('colors');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config();
 const app = express();
 const port = process.env.PORT || 5000;
@@ -11,13 +10,13 @@ app.use(express.json());
 
 // mongodb
 
-const uri = process.env.MONGODB_URI;
+const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.ufdxsbo.mongodb.net/?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 
 const dbConnect = async () => {
   try {
     await client.connect();
-    console.log('MongoDB Connected'.yellow.bold);
+    console.log('MongoDB Connected');
   } catch (error) {
     console.log(error.name, error.message);
   }
@@ -70,7 +69,27 @@ app.get('/services', async (req, res) => {
     res.send({
       success: false,
       error: error.message
+    });
+  }
+});
+
+// get single service
+app.get('/services/:id', async (req, res) => {
+  try {
+    const id = req.params.id;
+    const query = { _id: ObjectId(id) };
+    const result = await servicesCollection.findOne(query);
+    
+    res.send({
+      success: true,
+      message: 'Successfully got the requested data',
+      data: result
     })
+  } catch (error) {
+    res.send({
+      success: false,
+      error: error.message
+    });
   }
 })
 
@@ -79,5 +98,5 @@ app.get('/', (req, res) => {
 });
 
 app.listen(port, () => {
-  console.log(`Server is running on port: ${port}`.cyan.bold);
+  console.log(`Server is running on port: ${port}`);
 })

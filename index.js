@@ -58,13 +58,23 @@ app.get('/services', async (req, res) => {
   try {
     const query = {};
     const cursor = servicesCollection.find(query);
-    const services = await cursor.toArray();
+    const size = parseInt(req.query.size);
 
-    res.send({
-      success: true,
-      message: 'Successfully got the services data',
-      data: services
-    })
+    if (size) {
+      const services = await cursor.limit(size).toArray();
+      res.send({
+        success: true,
+        message: 'Successfully got the services data',
+        data: services
+      })
+    } else {
+      const services = await cursor.toArray();
+      res.send({
+        success: true,
+        message: 'Successfully got the services data',
+        data: services
+      })
+    }
   } catch (error) {
     res.send({
       success: false,
@@ -79,7 +89,7 @@ app.get('/services/:id', async (req, res) => {
     const id = req.params.id;
     const query = { _id: ObjectId(id) };
     const result = await servicesCollection.findOne(query);
-    
+
     res.send({
       success: true,
       message: 'Successfully got the requested data',

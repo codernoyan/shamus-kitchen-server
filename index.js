@@ -12,7 +12,8 @@ app.use(express.json());
 // mongodb
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.ufdxsbo.mongodb.net/?retryWrites=true&w=majority`;
-const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
+// const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
+const client = new MongoClient(uri, { useUnifiedTopology: true}, { useNewUrlParser: true }, { connectTimeoutMS: 30000 }, { keepAlive: 1});
 
 // user verify
 const verifyJWT = (req, res, next) => {
@@ -47,6 +48,7 @@ dbConnect();
 // kitchen service database
 const servicesCollection = client.db('cloudKitchen').collection('services');
 const reviewsCollection = client.db('cloudKitchen').collection('reviews');
+
 
 // add services
 app.post('/services', async (req, res) => {
@@ -154,8 +156,6 @@ app.post('/reviews', async (req, res) => {
 app.get('/reviews', verifyJWT, async (req, res) => {
   try {
     const decoded = req.decoded;
-    console.log('inside reviews api', decoded);
-
     if (decoded.email !== req.query.email) {
       res.status(403).send({
         message: 'Unauthorized Access'
@@ -206,12 +206,38 @@ app.delete('/reviews/:id', async (req, res) => {
   }
 });
 
+// update reviews
+app.patch('/reviews/:id', async (req, res) => {
+  try {
+    const id = req.params.id;
+    const filter = { _id: ObjectId(id) };
+    const review = req.body;
+    const updatedReview = {
+      $set: {
+        reviewText: review.reviewText
+      }
+    };
+    const result = await reviewsCollection.updateOne(filter, updatedReview);
+    res.send({
+      success: true,
+      message: 'Review Updated',
+      updated: result
+    })
+  } catch (error) {
+    res.send({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// jwt post api
 app.post('/jwt', (req, res) => {
   const user = req.body;
   console.log(user);
-  const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '20s' })
-  res.send({token});
-})
+  const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1d' })
+  res.send({ token });
+});
 
 app.get('/', (req, res) => {
   res.send('Cloud Kitchen server is running');

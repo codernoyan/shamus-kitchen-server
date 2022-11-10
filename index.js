@@ -25,6 +25,7 @@ dbConnect();
 
 // kitchen service database
 const servicesCollection = client.db('cloudKitchen').collection('services');
+const reviewsCollection = client.db('cloudKitchen').collection('reviews');
 
 // add services
 app.post('/services', async (req, res) => {
@@ -104,28 +105,68 @@ app.get('/services/:id', async (req, res) => {
 });
 
 // review post api
-app.put('/services/:id', async (req, res) => {
-  try {
-    const id = req.params.id;
-    const filter = { _id: ObjectId(id) };
-    const info = req.body;
-    const updatedDoc = {
-      $push: { customerReview: info }
-    };
-    const result = await servicesCollection.updateOne(filter, updatedDoc, { upsert: true });
+// app.put('/services/:id', async (req, res) => {
+//   try {
+//     const id = req.params.id;
+//     const filter = { _id: ObjectId(id) };
+//     const info = req.body;
+//     const updatedDoc = {
+//       $push: { customerReview: info }
+//     };
+//     const result = await servicesCollection.updateOne(filter, updatedDoc, { upsert: true });
 
-    if (result.matchedCount) {
+//     if (result.matchedCount) {
+//       res.send({
+//         success: true,
+//         message: `successfully updated review`,
+//         data: result
+//       });
+//     } else {
+//       res.send({
+//         success: false,
+//         error: "Couldn't update  the product",
+//       });
+//     }
+//   } catch (error) {
+//     res.send({
+//       success: false,
+//       error: error.message
+//     });
+//   }
+// });
+
+// post reviews
+app.post('/reviews', async (req, res) => {
+  try {
+    const review = req.body;
+    const result = await reviewsCollection.insertOne(review);
+    if (result.insertedId) {
       res.send({
         success: true,
-        message: `successfully updated review`,
+        message: `Successfully posted the review`,
         data: result
-      });
+      })
     } else {
       res.send({
         success: false,
-        error: "Couldn't update  the product",
-      });
+        error: "Couldn't post the review"
+      })
     }
+  } catch (error) {
+    res.send({
+      success: false,
+      error: error.message
+    });
+  }
+})
+
+// get reviews
+app.get('/reviews', async (req, res) => {
+  try {
+    const query = {};
+    const cursor = reviewsCollection.find(query);
+    const reviews = await cursor.toArray();
+    res.send(reviews);
   } catch (error) {
     res.send({
       success: false,

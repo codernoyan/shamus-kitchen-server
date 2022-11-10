@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const jwt = require('jsonwebtoken');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config();
 const app = express();
@@ -12,6 +13,26 @@ app.use(express.json());
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.ufdxsbo.mongodb.net/?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
+
+// user verify
+const verifyJWT = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) {
+    return res.status(401).send({
+      message: 'Unauthorized Access'
+    })
+  }
+  const token = authHeader.split(' ')[1];
+  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+    if (err) {
+      return res.status(403).send({
+        message: 'Unauthorized Access'
+      })
+    }
+    req.decoded = decoded;
+    next();
+  })
+}
 
 const dbConnect = async () => {
   try {
@@ -104,37 +125,6 @@ app.get('/services/:id', async (req, res) => {
   }
 });
 
-// review post api
-// app.put('/services/:id', async (req, res) => {
-//   try {
-//     const id = req.params.id;
-//     const filter = { _id: ObjectId(id) };
-//     const info = req.body;
-//     const updatedDoc = {
-//       $push: { customerReview: info }
-//     };
-//     const result = await servicesCollection.updateOne(filter, updatedDoc, { upsert: true });
-
-//     if (result.matchedCount) {
-//       res.send({
-//         success: true,
-//         message: `successfully updated review`,
-//         data: result
-//       });
-//     } else {
-//       res.send({
-//         success: false,
-//         error: "Couldn't update  the product",
-//       });
-//     }
-//   } catch (error) {
-//     res.send({
-//       success: false,
-//       error: error.message
-//     });
-//   }
-// });
-
 // post reviews
 app.post('/reviews', async (req, res) => {
   try {
@@ -161,9 +151,23 @@ app.post('/reviews', async (req, res) => {
 })
 
 // get reviews
-app.get('/reviews', async (req, res) => {
+app.get('/reviews', verifyJWT, async (req, res) => {
   try {
-    const query = {};
+    const decoded = req.decoded;
+    console.log('inside reviews api', decoded);
+
+    if (decoded.email !== req.query.email) {
+      res.status(403).send({
+        message: 'Unauthorized Access'
+      })
+    }
+
+    let query = {};
+    if (req.query.email) {
+      query = {
+        authorEmail: req.query.email
+      }
+    }
     const cursor = reviewsCollection.find(query);
     const reviews = await cursor.toArray();
     res.send(reviews);
@@ -173,6 +177,40 @@ app.get('/reviews', async (req, res) => {
       error: error.message
     });
   }
+});
+
+// delete review
+app.delete('/reviews/:id', async (req, res) => {
+  try {
+    const id = req.params.id;
+    const query = { _id: ObjectId(id) };
+    const result = await reviewsCollection.deleteOne(query);
+
+    if (result.deletedCount) {
+      res.send({
+        success: true,
+        message: 'Successfully deleted the review',
+        deleted: result
+      })
+    } else {
+      res.send({
+        success: false,
+        error: "Couldn't delete the review"
+      })
+    }
+  } catch (error) {
+    res.send({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+app.post('/jwt', (req, res) => {
+  const user = req.body;
+  console.log(user);
+  const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '20s' })
+  res.send({token});
 })
 
 app.get('/', (req, res) => {

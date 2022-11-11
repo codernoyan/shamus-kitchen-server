@@ -10,7 +10,8 @@ app.use(express.json());
 
 // mongodb
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.ufdxsbo.mongodb.net/?retryWrites=true&w=majority`;
-const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
+// const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
+const client = new MongoClient(uri, { useUnifiedTopology: true}, { useNewUrlParser: true }, { connectTimeoutMS: 30000 }, { keepAlive: 1});
 
 const dbConnect = async () => {
   try {
@@ -138,7 +139,10 @@ app.get('/reviews', async (req, res) => {
         authorEmail: req.query.email
       }
     }
-    const cursor = reviewsCollection.find(query);
+    const options = {
+      sort: {"postedOn": -1}
+    }
+    const cursor = reviewsCollection.find(query, options);
     const reviews = await cursor.toArray();
     res.send(reviews);
   } catch (error) {

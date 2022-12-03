@@ -3,10 +3,31 @@ const cors = require('cors');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config();
 const app = express();
+const jwt = require('jsonwebtoken');
 const port = process.env.PORT || 5000;
 
 app.use(cors());
 app.use(express.json());
+
+// jwt middleware
+const verifyJwt = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader) {
+    return res.status(403).send({ access: 'forbidden' });
+  }
+
+  const token = authHeader.split(' ')[1];
+  jwt.verify(token, process.env.AUTH_SECRET_KEY, (err, decoded) => {
+
+    if (err) {
+      res.status(403).send({ access: 'forbidden access' });
+    }
+
+    req.decoded = decoded;
+    next();
+  })
+}
 
 // mongodb
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.ufdxsbo.mongodb.net/?retryWrites=true&w=majority`;
@@ -26,6 +47,7 @@ dbConnect();
 // kitchen service database
 const servicesCollection = client.db('cloudKitchen').collection('services');
 const reviewsCollection = client.db('cloudKitchen').collection('reviews');
+const usersCollection = client.db('cloudKitchen').collection('users');
 
 
 // add services
@@ -134,13 +156,13 @@ app.post('/reviews', async (req, res) => {
 app.get('/reviews', async (req, res) => {
   try {
     let query = {};
-    if (req.query.email) {
-      query = {
-        authorEmail: req.query.email
-      }
-    }
+    // if (req.query.email) {
+    //   query = {
+    //     authorEmail: req.query.email
+    //   }
+    // }
     const options = {
-      sort: {"postedOn": -1}
+      sort: { "postedOn": -1 }
     }
     const cursor = reviewsCollection.find(query, options);
     const reviews = await cursor.toArray();
@@ -152,6 +174,23 @@ app.get('/reviews', async (req, res) => {
     });
   }
 });
+
+// new updated code with jwt verify
+app.get('/reviews/user', verifyJwt, async (req, res) => {
+  try {
+    const query = req.query.email;
+    const filter = { authorEmail: query };
+    const cursor = reviewsCollection.find(filter);
+    const reviews = await cursor.toArray();
+    res.send(reviews);
+
+  } catch (error) {
+    res.send({
+      success: false,
+      error: error.message
+    });
+  }
+})
 
 app.get('/reviews/:id', async (req, res) => {
   try {
@@ -223,6 +262,34 @@ app.patch('/reviews/:id', async (req, res) => {
     });
   }
 });
+
+// create a user with jwt token
+app.put('/users/:email', async (req, res) => {
+  try {
+    const email = req.params.email;
+    const user = req.body;
+    const query = { email };
+    const options = { upsert: true };
+    
+    const updateDoc = {
+      $set: user
+    }
+    const result = await usersCollection.updateOne(query, updateDoc, options);
+
+    // create jwt token
+    const token = jwt.sign({ user }, process.env.AUTH_SECRET_KEY, {
+      expiresIn: '1d'
+    });
+
+    res.send({result, token});
+
+  } catch (error) {
+    res.send({
+      success: false,
+      error: error.message
+    });
+  }
+})
 
 app.get('/', (req, res) => {
   res.send('Cloud Kitchen server is running');

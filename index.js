@@ -281,6 +281,8 @@ app.put('/users/:email', async (req, res) => {
       expiresIn: '1d'
     });
 
+    // console.log(token);
+
     res.send({result, token});
 
   } catch (error) {

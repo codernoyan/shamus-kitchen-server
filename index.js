@@ -49,6 +49,35 @@ const servicesCollection = client.db('cloudKitchen').collection('services');
 const reviewsCollection = client.db('cloudKitchen').collection('reviews');
 const usersCollection = client.db('cloudKitchen').collection('users');
 
+// create a user with jwt token
+app.put('/users/:email', async (req, res) => {
+  try {
+    const email = req.params.email;
+    const user = req.body;
+    const query = { email };
+    const options = { upsert: true };
+    
+    const updateDoc = {
+      $set: user
+    }
+    const result = await usersCollection.updateOne(query, updateDoc, options);
+
+    // create jwt token
+    const token = jwt.sign({ user }, process.env.AUTH_SECRET_KEY, {
+      expiresIn: '1d'
+    });
+
+    // console.log(token);
+
+    res.send({ result, token });
+
+  } catch (error) {
+    res.send({
+      success: false,
+      error: error.message
+    });
+  }
+});
 
 // add services
 app.post('/services', async (req, res) => {
@@ -263,35 +292,6 @@ app.patch('/reviews/:id', async (req, res) => {
   }
 });
 
-// create a user with jwt token
-app.put('/users/:email', async (req, res) => {
-  try {
-    const email = req.params.email;
-    const user = req.body;
-    const query = { email };
-    const options = { upsert: true };
-    
-    const updateDoc = {
-      $set: user
-    }
-    const result = await usersCollection.updateOne(query, updateDoc, options);
-
-    // create jwt token
-    const token = jwt.sign({ user }, process.env.AUTH_SECRET_KEY, {
-      expiresIn: '1d'
-    });
-
-    // console.log(token);
-
-    res.send({result, token});
-
-  } catch (error) {
-    res.send({
-      success: false,
-      error: error.message
-    });
-  }
-})
 
 app.get('/', (req, res) => {
   res.send('Cloud Kitchen server is running');

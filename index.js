@@ -185,11 +185,6 @@ app.post('/reviews', async (req, res) => {
 app.get('/reviews', async (req, res) => {
   try {
     let query = {};
-    // if (req.query.email) {
-    //   query = {
-    //     authorEmail: req.query.email
-    //   }
-    // }
     const options = {
       sort: { "postedOn": -1 }
     }

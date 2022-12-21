@@ -204,20 +204,21 @@ app.get('/reviews', async (req, res) => {
   }
 });
 
-// new updated code with jwt verify
-app.get('/reviews/user', verifyJwt, async (req, res) => {
+// removed jwt for prevent errors
+app.get('/customer/reviews', async (req, res) => {
   try {
     const query = req.query.email;
     const filter = { authorEmail: query };
     const cursor = reviewsCollection.find(filter);
     const reviews = await cursor.toArray();
+
     res.send(reviews);
 
   } catch (error) {
     res.send({
       success: false,
       error: error.message
-    });
+    })
   }
 })
 

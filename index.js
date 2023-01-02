@@ -21,7 +21,7 @@ const verifyJwt = (req, res, next) => {
   jwt.verify(token, process.env.AUTH_SECRET_KEY, (err, decoded) => {
 
     if (err) {
-      res.status(403).send({ access: 'forbidden access' });
+      return res.status(403).send({ access: 'forbidden access' });
     }
 
     req.decoded = decoded;
@@ -182,7 +182,7 @@ app.post('/reviews', async (req, res) => {
 })
 
 // get reviews
-app.get('/reviews', async (req, res) => {
+app.get('/reviews', verifyJwt, async (req, res) => {
   try {
     let query = {};
     const options = {
@@ -200,13 +200,13 @@ app.get('/reviews', async (req, res) => {
 });
 
 // removed jwt for prevent errors
-app.get('/customer/reviews', async (req, res) => {
+app.get('/customer/reviews', verifyJwt, async (req, res) => {
   try {
     const query = req.query.email;
     const filter = { authorEmail: query };
     const cursor = reviewsCollection.find(filter);
     const reviews = await cursor.toArray();
-
+    // console.log(req.headers.authorization);
     res.send(reviews);
 
   } catch (error) {

@@ -138,7 +138,7 @@ app.get('/services', async (req, res) => {
 });
 
 // get single service
-app.get('/services/:id', async (req, res) => {
+app.get('/service/:id', async (req, res) => {
   try {
     const id = req.params.id;
     const query = { _id: ObjectId(id) };
@@ -218,7 +218,7 @@ app.get('/customer/reviews', verifyJwt, async (req, res) => {
   }
 })
 
-app.get('/reviews/:id', async (req, res) => {
+app.get('/review/:id', async (req, res) => {
   try {
     const id = req.params.id;
     const query = { _id: ObjectId(id) };
@@ -238,7 +238,7 @@ app.get('/reviews/:id', async (req, res) => {
 })
 
 // delete review
-app.delete('/reviews/:id', async (req, res) => {
+app.delete('/review/delete/:id', async (req, res) => {
   try {
     const id = req.params.id;
     const query = { _id: ObjectId(id) };
@@ -265,7 +265,7 @@ app.delete('/reviews/:id', async (req, res) => {
 });
 
 // update reviews
-app.patch('/reviews/:id', async (req, res) => {
+app.patch('/review/update/:id', async (req, res) => {
   try {
     const id = req.params.id;
     const filter = { _id: ObjectId(id) };
